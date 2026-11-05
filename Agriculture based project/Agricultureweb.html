@@ -1,1 +1,463 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Irrigation System</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f0f5f1;
+    color: #183c2b;
+}
+
+header {
+    background: #14532d;
+    color: white;
+    padding: 22px 7%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+header h1 {
+    font-size: 24px;
+}
+
+header p {
+    margin-top: 6px;
+    color: #d1fae5;
+    font-size: 13px;
+}
+
+.connection {
+    background: #276749;
+    padding: 9px 15px;
+    border-radius: 25px;
+    font-size: 13px;
+}
+
+.container {
+    max-width: 1150px;
+    margin: 35px auto;
+    padding: 0 20px;
+}
+
+.heading {
+    margin-bottom: 22px;
+}
+
+.heading h2 {
+    font-size: 25px;
+}
+
+.heading p {
+    color: #718078;
+    margin-top: 8px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.card {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+    color: #718078;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.value {
+    font-size: 35px;
+    font-weight: bold;
+}
+
+.unit {
+    font-size: 17px;
+    color: #718078;
+}
+
+.bar {
+    width: 100%;
+    height: 9px;
+    background: #e5eee8;
+    border-radius: 20px;
+    margin-top: 20px;
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    background: #16a34a;
+    border-radius: 20px;
+    transition: width 0.4s;
+}
+
+.panel {
+    margin-top: 22px;
+}
+
+.panel h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+.pump-status {
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 18px;
+}
+
+button {
+    border: none;
+    padding: 13px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    margin: 5px 5px 5px 0;
+}
+
+.auto {
+    background: #15803d;
+    color: white;
+}
+
+.on {
+    background: #16a34a;
+    color: white;
+}
+
+.off {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+button:hover {
+    opacity: 0.85;
+}
+
+.range {
+    width: 100%;
+    margin: 20px 0;
+    accent-color: #15803d;
+}
+
+.info {
+    color: #718078;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+footer {
+    text-align: center;
+    padding: 25px;
+    color: #718078;
+    font-size: 13px;
+}
+
+@media(max-width:750px) {
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div>
+        <h1>🌱 Smart Irrigation System</h1>
+        <p>Automatic Plant Watering & Monitoring</p>
+    </div>
+
+    <div class="connection" id="connection">
+        ● Connecting...
+    </div>
+</header>
+
+<div class="container">
+
+    <div class="heading">
+        <h2>Dashboard Overview</h2>
+        <p>Monitor your plant environment in real time.</p>
+    </div>
+
+    <!-- SENSOR CARDS -->
+
+    <div class="cards">
+
+        <div class="card">
+            <h3>🌱 SOIL MOISTURE</h3>
+            <div class="value">
+                <span id="soil">--</span>
+                <span class="unit">%</span>
+            </div>
+            <div class="bar">
+                <div class="fill" id="soilBar"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>💧 AIR HUMIDITY</h3>
+            <div class="value">
+                <span id="humidity">--</span>
+                <span class="unit">%</span>
+            </div>
+            <div class="bar">
+                <div class="fill" id="humidityBar"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🌡️ TEMPERATURE</h3>
+            <div class="value">
+                <span id="temperature">--</span>
+                <span class="unit">°C</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- PUMP CONTROL -->
+
+    <div class="card panel">
+
+        <h2>🚰 Water Pump Control</h2>
+
+        <div class="pump-status" id="pumpStatus">
+            PUMP OFF
+        </div>
+
+        <p class="info">
+            Current Mode: <strong id="mode">AUTO</strong>
+        </p>
+
+        <br>
+
+        <button class="auto" onclick="control('AUTO')">
+            AUTO MODE
+        </button>
+
+        <button class="on" onclick="control('ON')">
+            PUMP ON
+        </button>
+
+        <button class="off" onclick="control('OFF')">
+            PUMP OFF
+        </button>
+
+        <p class="info" id="message" style="margin-top:15px">
+            Waiting for Arduino connection...
+        </p>
+
+    </div>
+
+    <!-- THRESHOLD CONTROL -->
+
+    <div class="card panel">
+
+        <h2>⚙️ Soil Moisture Threshold</h2>
+
+        <p class="info">
+            Set the soil moisture level below which the pump starts.
+        </p>
+
+        <h3 style="margin-top:20px">
+            Threshold: <span id="thresholdValue">35</span>%
+        </h3>
+
+        <input
+            type="range"
+            class="range"
+            id="threshold"
+            min="5"
+            max="90"
+            value="35"
+            oninput="document.getElementById('thresholdValue').innerText=this.value"
+        >
+
+        <button class="auto" onclick="saveThreshold()">
+            SAVE THRESHOLD
+        </button>
+
+    </div>
+
+    <!-- DEVICE INFORMATION -->
+
+    <div class="card panel">
+        <h2>📡 Device Information</h2>
+
+        <p class="info">
+            Device: Arduino UNO<br>
+            Soil Sensor: Analog A0<br>
+            Humidity Sensor: DHT11<br>
+            Relay Pin: D7<br>
+            Last Update: <span id="updated">--</span><br>
+            Raw Soil Value: <span id="raw">--</span><br>
+            Connection: <span id="deviceStatus">Disconnected</span>
+        </p>
+    </div>
+
+</div>
+
+<footer>
+    Smart Irrigation System | Arduino UNO Project
+</footer>
+
+<script>
+
+// Flask backend communication
+
+async function control(action) {
+
+    try {
+
+        const response = await fetch('/api/control', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: action
+            })
+        });
+
+        const result = await response.json();
+
+        document.getElementById('message').innerText =
+            result.message;
+
+        refreshDashboard();
+
+    } catch(error) {
+
+        document.getElementById('message').innerText =
+            'Backend not connected!';
+
+    }
+}
+
+async function saveThreshold() {
+
+    let value = document.getElementById('threshold').value;
+
+    try {
+
+        const response = await fetch('/api/threshold', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                value: Number(value)
+            })
+        });
+
+        const result = await response.json();
+
+        document.getElementById('message').innerText =
+            result.message;
+
+    } catch(error) {
+
+        document.getElementById('message').innerText =
+            'Backend not connected!';
+
+    }
+}
+
+// Get live Arduino sensor data
+
+async function refreshDashboard() {
+
+    try {
+
+        const response = await fetch('/api/status');
+        const data = await response.json();
+
+        document.getElementById('connection').innerText =
+            data.connected ? '● Arduino Connected' : '● Disconnected';
+
+        document.getElementById('soil').innerText =
+            data.soil ?? '--';
+
+        document.getElementById('humidity').innerText =
+            data.humidity ?? '--';
+
+        document.getElementById('temperature').innerText =
+            data.temperature ?? '--';
+
+        document.getElementById('soilBar').style.width =
+            (data.soil ?? 0) + '%';
+
+        document.getElementById('humidityBar').style.width =
+            (data.humidity ?? 0) + '%';
+
+        document.getElementById('pumpStatus').innerText =
+            'PUMP ' + (data.pump ?? '--');
+
+        document.getElementById('pumpStatus').style.color =
+            data.pump === 'ON' ? '#16a34a' : '#718078';
+
+        document.getElementById('mode').innerText =
+            data.mode ?? '--';
+
+        document.getElementById('threshold').value =
+            data.threshold ?? 35;
+
+        document.getElementById('thresholdValue').innerText =
+            data.threshold ?? 35;
+
+        document.getElementById('updated').innerText =
+            data.last_update ?? '--';
+
+        document.getElementById('raw').innerText =
+            data.raw ?? '--';
+
+        document.getElementById('deviceStatus').innerText =
+            data.error || 'Connected';
+
+    } catch(error) {
+
+        document.getElementById('connection').innerText =
+            '● Backend Disconnected';
+
+        document.getElementById('deviceStatus').innerText =
+            'Disconnected';
+
+    }
+}
+
+refreshDashboard();
+
+setInterval(refreshDashboard, 1500);
+
+</script>
+
+</body>
+</html>
+
