@@ -1,1 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alcohol Detection Dashboard</title>
+<style>
+:root{--bg:#0b1020;--panel:#151f34;--line:#293853;--text:#edf3ff;--muted:#9aabc7;--cyan:#42d6e8;--green:#35d39a;--red:#ff647c;--amber:#ffbf5b}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at 15% 0%,#1a2d4e 0,transparent 40%),var(--bg);color:var(--text);font:15px/1.5 Arial,Helvetica,sans-serif}
+.wrap{max-width:1250px;margin:auto;padding:26px 20px}
+header{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.brand{display:flex;gap:13px;align-items:center}.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#27c6dc,#4169e1);display:grid;place-items:center;font-size:25px}
+h1{font-size:23px;margin:0}.sub{font-size:13px;color:var(--muted);margin-top:3px}
+.actions{display:flex;gap:9px;flex-wrap:wrap}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;padding:11px 15px;color:var(--text);background:#1c2a43;font-weight:bold}button.primary{background:linear-gradient(135deg,#22bfd4,#4778e8);color:#071323;border:0}button:hover{filter:brightness(1.12)}
+.connection{padding:11px 14px;background:#111b2e;border:1px solid var(--line);border-radius:11px;color:var(--muted);font-size:13px;margin-bottom:17px;display:flex;gap:9px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--amber)}.dot.connected{background:var(--green)}.dot.demo{background:var(--cyan)}
+.grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px}
+.card{background:linear-gradient(150deg,#17233a,#111a2d);border:1px solid var(--line);border-radius:17px;padding:20px;min-width:0}
+.heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:17px}
+.label{font-size:12px;color:var(--muted);font-weight:bold;letter-spacing:1px;text-transform:uppercase}
+.pill{background:#263650;color:#c7d6ef;border-radius:30px;padding:6px 10px;font-size:11px}
+.reading{font-size:54px;font-weight:800;letter-spacing:-2px;line-height:1.2;margin-top:14px}.reading small{font-size:14px;color:var(--muted);font-weight:normal;letter-spacing:0}
+.meter{height:10px;background:#2a3850;border-radius:20px;overflow:hidden;margin:22px 0 8px}.fill{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--amber),var(--red));transition:width .2s}
+.scale{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
+.alertbox{display:flex;align-items:center;gap:13px;border:1px solid #267b5d;background:#10362d;padding:17px;border-radius:14px}
+.alertbox.danger{border-color:#963b51;background:#3b1e2b;animation:pulse 1.3s infinite}
+.alerticon{font-size:27px}.alerttitle{font-size:19px;font-weight:bold}.alertdesc{font-size:13px;color:#c2cee0;margin-top:3px}
+@keyframes pulse{50%{box-shadow:0 0 0 5px #ff647c12}}
+.stat{display:flex;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid #293650}.stat:last-child{border:0}
+.muted{color:var(--muted);font-size:13px}.on{color:var(--red);font-weight:bold}.off{color:var(--green);font-weight:bold}
+.wide{grid-column:span 2}.chart{height:245px}.chart canvas{width:100%;height:100%}
+.sliderrow{display:flex;align-items:center;gap:12px;margin:15px 0}input[type=range]{flex:1;accent-color:var(--cyan)}.number{color:var(--cyan);font-weight:bold;min-width:40px;text-align:right}
+.log{max-height:200px;overflow:auto}.logrow{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #293650;padding:9px 0;font-size:12px}.logrow:last-child{border:0}.time{color:var(--muted);white-space:nowrap}
+.note{font-size:12px;color:var(--muted);margin-top:17px}
+@media(max-width:850px){.grid{grid-template-columns:1fr 1fr}.wide{grid-column:span 2}}
+@media(max-width:560px){.wrap{padding:17px 12px}.grid{grid-template-columns:1fr}.wide{grid-column:span 1}.reading{font-size:46px}.actions{width:100%}.actions button{flex:1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><div class="logo">⌁</div><div><h1>Alcohol Detection System</h1><div class="sub">MQ-3 Sensor · Arduino UNO · Live Web Dashboard</div></div></div>
+  <div class="actions">
+    <button class="primary" id="connectBtn">Connect Arduino</button>
+    <button id="demoBtn">Start Demo</button>
+    <button id="stopBtn">Stop</button>
+  </div>
+</header>
 
+<div class="connection"><span class="dot" id="connectionDot"></span><span id="connectionText">Not connected</span><span style="margin-left:auto" id="updated">Waiting for data</span></div>
+
+<main class="grid">
+  <section class="card">
+    <div class="heading"><span class="label">Live sensor reading</span><span class="pill">MQ-3 · A0</span></div>
+    <div class="reading"><span id="sensorValue">---</span> <small>/ 1023</small></div>
+    <div class="muted" id="readingCaption">Connect Arduino to receive readings</div>
+    <div class="meter"><div class="fill" id="meterFill"></div></div>
+    <div class="scale"><span>0 · Low</span><span>1023 · High</span></div>
+  </section>
+
+  <section class="card">
+    <div class="heading"><span class="label">Detection status</span><span class="pill">Automatic</span></div>
+    <div class="alertbox" id="alertBox"><span class="alerticon" id="alertIcon">✓</span><div><div class="alerttitle" id="alertTitle">WAITING</div><div class="alertdesc" id="alertDesc">Waiting for sensor data</div></div></div>
+    <p class="muted">Detection is based only on the numeric sensor reading and threshold.</p>
+  </section>
+
+  <section class="card">
+    <div class="heading"><span class="label">Output devices</span><span class="pill">Arduino pins</span></div>
+    <div class="stat"><span class="muted">Buzzer · D8</span><span id="buzzerState">OFF</span></div>
+    <div class="stat"><span class="muted">Warning LED · D7</span><span id="ledState">OFF</span></div>
+    <div class="stat"><span class="muted">Connection</span><span id="deviceState">IDLE</span></div>
+  </section>
+
+  <section class="card wide">
+    <div class="heading"><span class="label">Sensor history</span><span class="pill">Recent readings</span></div>
+    <div class="chart"><canvas id="chart"></canvas></div>
+  </section>
+
+  <section class="card">
+    <div class="heading"><span class="label">Alert threshold</span><span class="pill">Editable</span></div>
+    <div class="sliderrow"><input id="threshold" type="range" min="0" max="1023" step="1" value="800"><span class="number" id="thresholdValue">800</span></div>
+    <p class="muted">Threshold is 800 by default. Set the same value in your Arduino sketch.</p>
+    <div class="stat"><span class="muted">Current threshold</span><strong id="thresholdLabel">800</strong></div>
+  </section>
+
+  <section class="card">
+    <div class="heading"><span class="label">Activity log</span><span class="pill">Latest events</span></div>
+    <div class="log" id="log"><div class="logrow"><span>Dashboard started</span><span class="time">Now</span></div></div>
+  </section>
+</main>
+<p class="note">Use Chrome or Edge on desktop for USB Serial connection. Click Connect Arduino and select the Arduino COM port. Demo mode is simulated only. This educational prototype is not a certified breathalyser or safety device.</p>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let threshold = 800;
+let serialPort = null;
+let serialReader = null;
+let readingActive = false;
+let demoTimer = null;
+let lastAlarm = null;
+let readings = [];
+const MAX_POINTS = 40;
+
+function addLog(message) {
+  const row = document.createElement("div");
+  row.className = "logrow";
+  const msg = document.createElement("span");
+  msg.textContent = message;
+  const time = document.createElement("span");
+  time.className = "time";
+  time.textContent = new Date().toLocaleTimeString();
+  row.append(msg, time);
+  $("log").prepend(row);
+  while ($("log").children.length > 12) $("log").lastElementChild.remove();
+}
+
+function setConnection(message, mode) {
+  $("connectionText").textContent = message;
+  $("connectionDot").className = "dot " + (mode || "");
+  $("deviceState").textContent = mode === "connected" ? "LIVE" : mode === "demo" ? "DEMO" : "IDLE";
+}
+
+function updateDashboard(rawValue) {
+  const value = Math.max(0, Math.min(1023, Math.round(Number(rawValue))));
+  if (!Number.isFinite(value)) return;
+
+  // IMPORTANT: Numeric reading alone decides the alert.
+  // At 800 or below = SAFE. Above 800 = ALCOHOL ALERT.
+  const detected = value > threshold;
+
+  $("sensorValue").textContent = value;
+  $("meterFill").style.width = (value / 1023 * 100) + "%";
+  $("readingCaption").textContent = detected ? "Reading is above threshold" : "Reading is at or below threshold";
+
+  $("alertBox").className = "alertbox" + (detected ? " danger" : "");
+  $("alertIcon").textContent = detected ? "⚠" : "✓";
+  $("alertTitle").textContent = detected ? "ALCOHOL ALERT" : "SAFE";
+  $("alertDesc").textContent = detected ? "Sensor value is above " + threshold : "Sensor value is at or below " + threshold;
+
+  $("buzzerState").textContent = detected ? "ALERT" : "OFF";
+  $("buzzerState").className = detected ? "on" : "off";
+  $("ledState").textContent = detected ? "BLINKING" : "OFF";
+  $("ledState").className = detected ? "on" : "off";
+  $("updated").textContent = "Updated " + new Date().toLocaleTimeString();
+
+  if (lastAlarm !== detected) {
+    addLog(detected ? "Alcohol threshold exceeded" : "Reading is safe");
+    lastAlarm = detected;
+  }
+
+  readings.push(value);
+  if (readings.length > MAX_POINTS) readings.shift();
+  drawChart();
+}
+
+function parseSerialLine(line) {
+  // Expected Arduino line: Alcohol Sensor Value: 454
+  // Ignore text-only lines such as "ALCOHOL DETECTED!".
+  const match = line.match(/Alcohol Sensor Value\s*:\s*(\d+)/i)
+             || line.match(/(?:MQ3|sensor|value)\s*[:=]\s*(\d+)/i);
+  if (match) updateDashboard(Number(match[1]));
+}
+
+async function connectArduino() {
+  if (!("serial" in navigator)) {
+    alert("Web Serial is not available. Open this page in Chrome or Edge on desktop using localhost.");
+    return;
+  }
+  try {
+    if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+    serialPort = await navigator.serial.requestPort();
+    await serialPort.open({ baudRate: 9600 });
+    setConnection("Arduino connected via USB Serial", "connected");
+    addLog("Arduino connected");
+    readingActive = true;
+
+    const decoder = new TextDecoderStream();
+    const pipePromise = serialPort.readable.pipeTo(decoder.writable);
+    serialReader = decoder.readable.getReader();
+    let buffer = "";
+
+    while (readingActive) {
+      const result = await serialReader.read();
+      if (result.done) break;
+      buffer += result.value;
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop();
+      for (const line of lines) parseSerialLine(line.trim());
+    }
+    await pipePromise.catch(() => {});
+  } catch (error) {
+    if (error.name !== "NotFoundError") addLog("Serial error: " + error.message);
+    setConnection("Not connected", "");
+  }
+}
+
+async function stopMonitoring() {
+  readingActive = false;
+  if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+  try {
+    if (serialReader) {
+      await serialReader.cancel();
+      serialReader.releaseLock();
+      serialReader = null;
+    }
+    if (serialPort) {
+      await serialPort.close();
+      serialPort = null;
+    }
+  } catch (error) {
+    addLog("Connection closed");
+  }
+  setConnection("Disconnected", "");
+  addLog("Monitoring stopped");
+}
+
+function startDemo() {
+  stopMonitoring();
+  setConnection("Demo simulation running", "demo");
+  addLog("Demo mode started");
+  let tick = 0;
+  demoTimer = setInterval(() => {
+    tick++;
+    const value = tick % 14 < 8
+      ? Math.round(350 + Math.random() * 300)
+      : Math.round(820 + Math.random() * 150);
+    updateDashboard(value);
+  }, 900);
+}
+
+function drawChart() {
+  const canvas = $("chart");
+  const ctx = canvas.getContext("2d");
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  const left = 38, right = 10, top = 12, bottom = 25;
+  const plotW = width - left - right;
+  const plotH = height - top - bottom;
+  ctx.font = "11px Arial";
+  ctx.fillStyle = "#9aabc7";
+  ctx.strokeStyle = "#293853";
+  for (let i = 0; i <= 4; i++) {
+    const y = top + plotH * i / 4;
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(width - right, y); ctx.stroke();
+    ctx.fillText(String(Math.round(1023 - i * 1023 / 4)), 2, y + 4);
+  }
+
+  const thresholdY = top + plotH * (1 - threshold / 1023);
+  ctx.save();
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = "#ffbf5b";
+  ctx.beginPath(); ctx.moveTo(left, thresholdY); ctx.lineTo(width - right, thresholdY); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = "#ffbf5b";
+  ctx.fillText("Threshold " + threshold, Math.max(left + 5, width - 112), Math.max(12, thresholdY - 7));
+
+  if (readings.length > 1) {
+    ctx.strokeStyle = "#42d6e8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    readings.forEach((value, index) => {
+      const x = left + (index / (MAX_POINTS - 1)) * plotW;
+      const y = top + plotH * (1 - value / 1023);
+      if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+}
+
+$("connectBtn").addEventListener("click", connectArduino);
+$("demoBtn").addEventListener("click", startDemo);
+$("stopBtn").addEventListener("click", stopMonitoring);
+$("threshold").addEventListener("input", event => {
+  threshold = Number(event.target.value);
+  $("thresholdValue").textContent = threshold;
+  $("thresholdLabel").textContent = threshold;
+  drawChart();
+  const current = Number($("sensorValue").textContent);
+  if (Number.isFinite(current)) updateDashboard(current);
+});
+window.addEventListener("resize", drawChart);
+drawChart();
+</script>
+</body>
+</html>
